@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IOC AQI Forecasting Dashboard — Indian Oil Corporation</title>
+  <meta name="description" content="Real-time AQI monitoring and forecasting dashboard for Indian Oil Corporation refinery zones across India."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ════════════════════════ HEADER ════════════════════════ -->
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <circle cx="18" cy="18" r="18" fill="url(#logoGrad)"/>
+          <path d="M18 8C12.48 8 8 12.48 8 18s4.48 10 10 10 10-4.48 10-10S23.52 8 18 8zm0 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="white"/>
+          <defs>
+            <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#0ea5e9"/>
+              <stop offset="1" stop-color="#6366f1"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">IOC AQI Intelligence</span>
+        <span class="brand-sub">Indian Oil Corporation · Refinery Zone Monitor</span>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="header-badge" id="datasetBadge">
+        <span class="badge-dot"></span>
+        <span id="datasetInfo">Loading…</span>
+      </div>
+      <div class="header-time" id="headerTime"></div>
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════════ NAV TABS ════════════════════════ -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="overview" id="tabOverview">Overview</button>
+  <button class="tab-btn" data-tab="zones" id="tabZones">Zone Analysis</button>
+  <button class="tab-btn" data-tab="forecast" id="tabForecast">Forecasts</button>
+  <button class="tab-btn" data-tab="alerts" id="tabAlerts">
+    Alerts <span class="alert-count" id="alertCount">—</span>
+  </button>
+  <button class="tab-btn" data-tab="pollutants" id="tabPollutants">Pollutants</button>
+</nav>
+
+<!-- ════════════════════════ MAIN ════════════════════════ -->
+<main class="main">
+
+  <!-- ── TAB: OVERVIEW ─────────────────────────────────────────────────── -->
+  <section class="tab-panel active" id="panel-overview">
+
+    <!-- Summary Cards -->
+    <div class="cards-grid" id="summaryCards"></div>
+
+    <!-- All-zones time series -->
+    <div class="chart-card wide">
+      <div class="chart-header">
+        <h2 class="chart-title">All-Zone AQI Trend</h2>
+        <div class="chart-controls">
+          <button class="ctrl-btn active" data-days="90" onclick="setOverviewDays(90,this)">3M</button>
+          <button class="ctrl-btn" data-days="180" onclick="setOverviewDays(180,this)">6M</button>
+          <button class="ctrl-btn" data-days="365" onclick="setOverviewDays(365,this)">1Y</button>
+          <button class="ctrl-btn" data-days="0" onclick="setOverviewDays(0,this)">All</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="allZonesChart"></canvas></div>
+    </div>
+
+    <!-- Category distribution -->
+    <div class="two-col">
+      <div class="chart-card">
+        <div class="chart-header"><h2 class="chart-title">AQI Category Distribution</h2></div>
+        <div class="chart-wrap half-h"><canvas id="catDistChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><h2 class="chart-title">Monthly Seasonality (All Zones)</h2></div>
+        <div class="chart-wrap half-h"><canvas id="seasonalityChart"></canvas></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── TAB: ZONE ANALYSIS ────────────────────────────────────────────── -->
+  <section class="tab-panel" id="panel-zones">
+    <div class="zone-selector">
+      <label class="selector-label">Select Zone</label>
+      <div class="zone-pills" id="zonePills"></div>
+    </div>
+    <div class="chart-card wide" id="zoneDetailCard">
+      <div class="chart-header">
+        <h2 class="chart-title" id="zoneDetailTitle">—</h2>
+        <div class="chart-controls">
+          <button class="ctrl-btn active" onclick="setZoneDays(365,this)">1Y</button>
+          <button class="ctrl-btn" onclick="setZoneDays(0,this)">All</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="zoneTimelineChart"></canvas></div>
+    </div>
+    <div class="two-col">
+      <div class="chart-card">
+        <div class="chart-header"><h2 class="chart-title">Year-over-Year Trend</h2></div>
+        <div class="chart-wrap half-h"><canvas id="yoyChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><h2 class="chart-title">AQI Category Breakdown</h2></div>
+        <div class="chart-wrap half-h"><canvas id="zoneCatChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TAB: FORECAST ─────────────────────────────────────────────────── -->
+  <section class="tab-panel" id="panel-forecast">
+    <div class="chart-card wide">
+      <div class="chart-header">
+        <h2 class="chart-title">30-Day AQI Forecast — All Zones</h2>
+        <div class="forecast-legend" id="forecastLegend"></div>
+      </div>
+      <div class="chart-wrap tall"><canvas id="forecastChart"></canvas></div>
+    </div>
+    <div class="forecast-cards" id="forecastCards"></div>
+  </section>
+
+  <!-- ── TAB: ALERTS ───────────────────────────────────────────────────── -->
+  <section class="tab-panel" id="panel-alerts">
+    <div class="alerts-header">
+      <h2 class="section-title">Proactive Emission Control Alerts</h2>
+      <p class="section-sub">Based on latest recorded AQI for each refinery zone. Thresholds follow CPCB standards.</p>
+    </div>
+    <div class="alert-threshold-legend">
+      <div class="thresh-item" style="--c:#2ecc71">🟢 Good / Satisfactory — Normal Operations (&lt;100)</div>
+      <div class="thresh-item" style="--c:#f1c40f">🟡 Moderate — Monitor Closely (101–200)</div>
+      <div class="thresh-item" style="--c:#e67e22">🟠 Poor — Reduce Emissions (201–300)</div>
+      <div class="thresh-item" style="--c:#e74c3c">🔴 Very Poor — Activate Controls (301–400)</div>
+      <div class="thresh-item" style="--c:#8e44ad">🚨 Severe — Emergency Protocol (&gt;400)</div>
+    </div>
+    <div class="alerts-grid" id="alertsGrid"></div>
+  </section>
+
+  <!-- ── TAB: POLLUTANTS ───────────────────────────────────────────────── -->
+  <section class="tab-panel" id="panel-pollutants">
+    <div class="zone-selector">
+      <label class="selector-label">Select Zone</label>
+      <div class="zone-pills" id="pollPills"></div>
+    </div>
+    <div class="pollutants-grid" id="pollutantsGrid"></div>
+  </section>
+
+</main>
+
+<!-- ════════════════════════ LOADER ════════════════════════ -->
+<div class="loader-overlay" id="loader">
+  <div class="loader-box">
+    <div class="spinner"></div>
+    <p>Loading AQI Data…</p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
